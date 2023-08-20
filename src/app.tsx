@@ -388,13 +388,13 @@ function Road({
   side,
   marker,
   dispatch,
-  narrowWidth,
+  tutorial,
 }: {
   dir: Direction
   side: Side
   marker: Model['roadMarker']
   dispatch: Dispatch<Msg>
-  narrowWidth: boolean
+  tutorial: boolean
 }) {
   let content
   let className = 'road'
@@ -415,9 +415,11 @@ function Road({
 
       content = <img className="indicator" alt={marker.type} src={src} />
     }
+  } else {
+    className += ' road--interactive'
   }
 
-  if (narrowWidth) {
+  if (dir === 'forward') {
     className += ' road--narrow-width'
   }
 
@@ -426,7 +428,7 @@ function Road({
       onClick={() => dispatch({ type: 'choose_path', dir, side })}
       className={className}
     >
-      {content}
+      {tutorial ? <div className="road-pulse">{content}</div> : content}
     </td>
   )
 }
@@ -440,6 +442,9 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
   if (model.scene === 'about') {
     return aboutView(dispatch)
   }
+
+  const tutorial =
+    model.scene === 'game' && model.score === 0 && !model.roadMarker
 
   return (
     <div className="ground">
@@ -476,7 +481,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'left',
                 marker: model.roadMarker,
                 dispatch,
-                narrowWidth: true,
+                tutorial,
               }}
             />
             <td className="grass" style={{ textAlign: 'center' }}>
@@ -488,7 +493,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'right',
                 marker: model.roadMarker,
                 dispatch,
-                narrowWidth: true,
+                tutorial,
               }}
             />
             <td className="grass">
@@ -508,7 +513,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'right',
                 marker: model.roadMarker,
                 dispatch,
-                narrowWidth: false,
+                tutorial,
               }}
             />
             <td className="road" colSpan={3} />
@@ -518,7 +523,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'left',
                 marker: model.roadMarker,
                 dispatch,
-                narrowWidth: false,
+                tutorial,
               }}
             />
           </tr>
@@ -544,23 +549,18 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                     Replay?
                   </button>
                 </p>
+              ) : model.scene === 'game' && model.instruction === 'forward' ? (
+                <p className="instruction">
+                  Go
+                  <br />
+                  <b>Forward</b>
+                </p>
               ) : (
-                model.scene === 'game' &&
-                model.instruction !== 'forward' && (
-                  <p className="instruction">
-                    Turn
-                    <br />
-                    <b
-                      style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        dispatch({ type: 'start_game', mode: model.mode })
-                      }}
-                    >
-                      {model.instruction === 'left' ? 'Left' : 'Right'}
-                    </b>
-                  </p>
-                )
+                <p className="instruction">
+                  Turn
+                  <br />
+                  <b>{model.instruction === 'left' ? 'Left' : 'Right'}</b>
+                </p>
               )}
             </td>
             <td
@@ -577,7 +577,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'left',
                 marker: model.roadMarker,
                 dispatch,
-                narrowWidth: false,
+                tutorial,
               }}
             />
             <td className="road" colSpan={3} />
@@ -587,7 +587,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'right',
                 marker: model.roadMarker,
                 dispatch,
-                narrowWidth: false,
+                tutorial,
               }}
             />
           </tr>
@@ -689,104 +689,123 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
   )
 }
 
-function aboutView(dispatch: Dispatch<Msg>) {
+function Page({
+  children,
+  onClose,
+}: React.PropsWithChildren<{ onClose: () => void }>) {
   return (
-    <div className="scrollable-view">
-      <div className="about">
-        <h2>What's this?</h2>
-        <p>
-          Welcome to the most hazardous intersection on the internet where the
-          correct way isn't just left or right or straight ahead, it's also
-          which side of the road to drive on!
-        </p>
-
-        <p>
-          Review the{' '}
-          <a
-            href="#"
+    <div className="fullscreen-page">
+      <div className="fullscreen-header">
+        <div className="about-container">
+          <b>Re:Turn</b>
+          <button
+            className="text-inherit"
             onClick={(e) => {
               e.preventDefault()
-              dispatch({ type: 'show_key' })
+              onClose()
             }}
           >
-            country key
-          </a>{' '}
-          for great success in medium & hard modes.
-        </p>
-
-        <p>
-          Made by <a href="https://jew.ski">Chris Andrejewski</a>
-        </p>
-        <p>{returnButton(dispatch)}</p>
+            Return to game
+          </button>
+        </div>
+      </div>
+      <div className="scrollable-view">
+        <div className="about">
+          {children}
+          <p>
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                onClose()
+              }}
+            >
+              Return to game
+            </button>
+          </p>
+        </div>
       </div>
     </div>
   )
 }
 
-function returnButton(dispatch: Dispatch<Msg>) {
+function aboutView(dispatch: Dispatch<Msg>) {
   return (
-    <button
-      onClick={(e) => {
-        e.preventDefault()
-        dispatch({ type: 'reset_game' })
-      }}
-    >
-      Return to game
-    </button>
+    <Page onClose={() => dispatch({ type: 'reset_game' })}>
+      <h2>What's this?</h2>
+      <p>
+        Welcome to the most hazardous intersection on the internet where the
+        correct way isn't just left or right or straight ahead, it's also which
+        side of the road to drive on!
+      </p>
+
+      <p>
+        Review the{' '}
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
+            dispatch({ type: 'show_key' })
+          }}
+        >
+          country key
+        </a>{' '}
+        for great success in medium & hard modes.
+      </p>
+
+      <p>
+        Made by <a href="https://jew.ski">Chris Andrejewski</a>
+      </p>
+    </Page>
   )
 }
 
 function keyView(dispatch: Dispatch<Msg>) {
   return (
-    <div className="scrollable-view">
-      <div className="about">
-        <h2>Country key</h2>
-        <p>Here's the list of countries and their dominant driving side.</p>
+    <Page onClose={() => dispatch({ type: 'reset_game' })}>
+      <h2>Country key</h2>
+      <p>Here's the list of countries and their dominant driving side.</p>
 
-        <h3>Medium mode</h3>
-        <table style={{ width: '100%' }}>
-          <tbody>
-            {mediumCountries
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((c) => (
-                <tr key={c.id}>
-                  <td style={{ width: '100%' }}>{c.name}</td>
-                  <td>
-                    <Indicator
-                      {...{ icon: { label: c.name, url: c.imageUrl } }}
-                    />
-                  </td>
-                  <td>
-                    <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+      <h3>Medium mode</h3>
+      <table style={{ width: '100%' }}>
+        <tbody>
+          {mediumCountries
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => (
+              <tr key={c.id}>
+                <td style={{ width: '100%' }}>{c.name}</td>
+                <td>
+                  <Indicator
+                    {...{ icon: { label: c.name, url: c.imageUrl } }}
+                  />
+                </td>
+                <td>
+                  <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
 
-        <h3>Hard mode</h3>
-        <table style={{ width: '100%' }}>
-          <tbody>
-            {allCountries
-              .sort((a, b) => a.name.localeCompare(b.name))
-              .map((c) => (
-                <tr key={c.id}>
-                  <td style={{ width: '100%' }}>{c.name}</td>
-                  <td>
-                    <Indicator
-                      {...{ icon: { label: c.name, url: c.imageUrl } }}
-                    />
-                  </td>
-                  <td>
-                    <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-
-        <p>{returnButton(dispatch)}</p>
-      </div>
-    </div>
+      <h3>Hard mode</h3>
+      <table style={{ width: '100%' }}>
+        <tbody>
+          {allCountries
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((c) => (
+              <tr key={c.id}>
+                <td style={{ width: '100%' }}>{c.name}</td>
+                <td>
+                  <Indicator
+                    {...{ icon: { label: c.name, url: c.imageUrl } }}
+                  />
+                </td>
+                <td>
+                  <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+    </Page>
   )
 }

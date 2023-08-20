@@ -45,12 +45,45 @@ code {
   text-align: center;
 }
 
+.road--interactive {
+  cursor: pointer;
+}
+
 .road--pass {
   background-color: #7ba385;
 }
 
 .road--fail {
   background-color: orange;
+}
+
+.road-pulse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 25%;
+
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.75);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
 }
 
 .indicator {
@@ -134,12 +167,30 @@ code {
   margin: 1vmin 0 2vmin 0;
 }
 
-.scrollable-view {
+.fullscreen-page {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullscreen-header {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2vmin;
+}
+
+.fullscreen-header .about-container {
+  color: #f4c5c5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scrollable-view {
+  flex: 1;
   overflow: scroll;
 }
 
@@ -149,6 +200,11 @@ code {
   font-size: 1.2rem;
   max-width: 500px;
   margin: 5vmin auto;
+}
+
+.about-container {
+  max-width: 500px;
+  margin: 0 auto;
 }
 
 .about a {

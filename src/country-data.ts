@@ -235,6 +235,13 @@ export type Country = {
   name: string
 }
 
+const correctedCountrySideData: typeof rawCountrySideData = {
+  ...rawCountrySideData,
+  'United States': 'right',
+  'United Kingdom': 'left',
+  Canada: 'right',
+}
+
 export function getCompleteCountries(): Country[] {
   const nameToCodeMapping: Record<string, string> = {}
   for (const [code, name] of Object.entries(countryCodeMapping)) {
@@ -242,7 +249,7 @@ export function getCompleteCountries(): Country[] {
   }
 
   const countries: Country[] = []
-  for (const [name, side] of Object.entries(rawCountrySideData)) {
+  for (const [name, side] of Object.entries(correctedCountrySideData)) {
     const code = nameToCodeMapping[name]
     if (!code) {
       console.warn('Country code not found by country name', name)
@@ -250,7 +257,7 @@ export function getCompleteCountries(): Country[] {
     }
 
     countries.push({
-      id: code,
+      id: code.toLowerCase(),
       side,
       imageUrl: `./country-flag-svg/${code.toLowerCase()}.svg`,
       name,

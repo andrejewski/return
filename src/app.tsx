@@ -5,7 +5,7 @@ import { Country, getCompleteCountries } from './country-data'
 
 type Direction = 'forward' | Side
 type Side = 'left' | 'right'
-type Mode = 'easy' | 'hard'
+type Mode = 'easy' | 'medium' | 'hard'
 type Icon = { label: string; url: string }
 
 type Layout = {
@@ -20,7 +20,7 @@ type Layout = {
 }
 
 type Model = {
-  scene: 'home' | 'game'
+  scene: 'home' | 'game' | 'key' | 'about'
   mode: Mode
   layout: Layout
 
@@ -49,11 +49,14 @@ type Model = {
 }
 
 type Msg =
+  | { type: 'reset_game' }
   | { type: 'start_game'; mode: Mode }
   | { type: 'start_next_round' }
   | { type: 'clear_game_scene' }
   | { type: 'choose_path'; dir: Direction; side: Side }
   | { type: 'game_tick' }
+  | { type: 'show_key' }
+  | { type: 'show_about' }
 
 function checkChoice(
   layout: Layout,
@@ -100,8 +103,30 @@ function makeRandomInstruction(): Direction {
 const possibleSides: Side[] = ['left', 'right']
 
 const allCountries = getCompleteCountries()
-const leftCountries = allCountries.filter((c) => c.side === 'left')
-const rightCountries = allCountries.filter((c) => c.side === 'right')
+;(window as any).$countries = allCountries
+
+const hardLeftCountries = allCountries.filter((c) => c.side === 'left')
+const hardRightCountries = allCountries.filter((c) => c.side === 'right')
+
+const mediumCountryCodes = [
+  'us',
+  'gb',
+  'in',
+  'br',
+  'jp',
+  'fr',
+  'au',
+  'nz',
+  'de',
+  'es',
+]
+
+const mediumCountries = allCountries.filter((c) =>
+  mediumCountryCodes.includes(c.id)
+)
+
+const mediumLeftCountries = mediumCountries.filter((c) => c.side === 'left')
+const mediumRightCountries = mediumCountries.filter((c) => c.side === 'right')
 
 function getSimpleSideIcon(side: Side): Icon {
   switch (side) {
@@ -112,14 +137,31 @@ function getSimpleSideIcon(side: Side): Icon {
   }
 }
 
-function getRandomCountryIcon(side: Side): Icon {
+function getRandomMediumCountryIcon(side: Side): Icon {
   let country: Country
   switch (side) {
     case 'left':
-      country = randomItem(leftCountries)
+      country = randomItem(mediumLeftCountries)
       break
     case 'right':
-      country = randomItem(rightCountries)
+      country = randomItem(mediumRightCountries)
+      break
+  }
+
+  return {
+    label: country.name,
+    url: country.imageUrl,
+  }
+}
+
+function getRandomHardCountryIcon(side: Side): Icon {
+  let country: Country
+  switch (side) {
+    case 'left':
+      country = randomItem(hardLeftCountries)
+      break
+    case 'right':
+      country = randomItem(hardRightCountries)
       break
   }
 
@@ -143,10 +185,15 @@ function makeRandomLayout(mode: Mode): Layout {
       leftIcon = getSimpleSideIcon(left)
       rightIcon = getSimpleSideIcon(right)
       break
+    case 'medium':
+      forwardIcon = getRandomMediumCountryIcon(forward)
+      leftIcon = getRandomMediumCountryIcon(left)
+      rightIcon = getRandomMediumCountryIcon(right)
+      break
     case 'hard':
-      forwardIcon = getRandomCountryIcon(forward)
-      leftIcon = getRandomCountryIcon(left)
-      rightIcon = getRandomCountryIcon(right)
+      forwardIcon = getRandomHardCountryIcon(forward)
+      leftIcon = getRandomHardCountryIcon(left)
+      rightIcon = getRandomHardCountryIcon(right)
       break
   }
 
@@ -178,25 +225,36 @@ function makeFailState(
   ]
 }
 
+const init: Change<Msg, Model> = [
+  {
+    scene: 'home',
+    mode: 'easy',
+    layout: makeRandomLayout('easy'),
+    previousSide: 'right',
+    carProgress: 0.5,
+    carVelocity: 0,
+    lastTickedAt: 0,
+    instruction: 'forward',
+    roadMarker: undefined,
+    score: 0,
+    highScore: 0,
+    transitioning: false,
+  },
+]
+
 export const appProgram = withSubscriptions<Msg, Model, React.ReactNode>({
-  init: [
-    {
-      scene: 'home',
-      mode: 'easy',
-      layout: makeRandomLayout('easy'),
-      previousSide: 'right',
-      carProgress: 0.5,
-      carVelocity: 0,
-      lastTickedAt: 0,
-      instruction: 'forward',
-      roadMarker: undefined,
-      score: 0,
-      highScore: 0,
-      transitioning: false,
-    },
-  ],
+  init,
   update(msg, model) {
     switch (msg.type) {
+      case 'reset_game': {
+        return init
+      }
+      case 'show_key': {
+        return [{ ...model, scene: 'key' }]
+      }
+      case 'show_about': {
+        return [{ ...model, scene: 'about' }]
+      }
       case 'start_game': {
         return [
           {
@@ -330,11 +388,13 @@ function Road({
   side,
   marker,
   dispatch,
+  narrowWidth,
 }: {
   dir: Direction
   side: Side
   marker: Model['roadMarker']
   dispatch: Dispatch<Msg>
+  narrowWidth: boolean
 }) {
   let content
   let className = 'road'
@@ -357,6 +417,10 @@ function Road({
     }
   }
 
+  if (narrowWidth) {
+    className += ' road--narrow-width'
+  }
+
   return (
     <td
       onClick={() => dispatch({ type: 'choose_path', dir, side })}
@@ -369,13 +433,42 @@ function Road({
 
 function view(model: Model, dispatch: Dispatch<Msg>) {
   ;(window as any).$model = model
+  if (model.scene === 'key') {
+    return keyView(dispatch)
+  }
+
+  if (model.scene === 'about') {
+    return aboutView(dispatch)
+  }
+
   return (
     <div className="ground">
       <table className={model.transitioning ? 'spin-zone' : ''}>
         <tbody>
-          <tr>
+          <tr className="extra-top">
+            <td className="grass"></td>
+            <td className="road"></td>
+            <td className="grass" />
+            <td className="road"></td>
+            <td className="grass"></td>
+          </tr>
+          <tr className="title-row">
             <td className="grass">
-              <h1 className="title">Re:Turn</h1>
+              <h1 className="title">
+                {model.roadMarker?.type === 'fail' ? (
+                  <button
+                    className="text-inherit"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      dispatch({ type: 'reset_game' })
+                    }}
+                  >
+                    Re:Turn
+                  </button>
+                ) : (
+                  'Re:Turn'
+                )}
+              </h1>
             </td>
             <Road
               {...{
@@ -383,6 +476,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'left',
                 marker: model.roadMarker,
                 dispatch,
+                narrowWidth: true,
               }}
             />
             <td className="grass" style={{ textAlign: 'center' }}>
@@ -394,9 +488,18 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'right',
                 marker: model.roadMarker,
                 dispatch,
+                narrowWidth: true,
               }}
             />
-            <td className="grass" />
+            <td className="grass">
+              {model.scene === 'game' && (
+                <h3 className="mode-title">
+                  {model.mode.charAt(0).toUpperCase() + model.mode.slice(1)}
+                  <br />
+                  mode
+                </h3>
+              )}
+            </td>
           </tr>
           <tr>
             <Road
@@ -405,17 +508,17 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'right',
                 marker: model.roadMarker,
                 dispatch,
+                narrowWidth: false,
               }}
             />
-            <td className="road" />
-            <td className="road" />
-            <td className="road" />
+            <td className="road" colSpan={3} />
             <Road
               {...{
                 dir: 'right',
                 side: 'left',
                 marker: model.roadMarker,
                 dispatch,
+                narrowWidth: false,
               }}
             />
           </tr>
@@ -426,23 +529,20 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
             >
               <Indicator icon={model.layout.leftIcon} />
             </td>
-            <td className="road" />
-            <td className="road">
+            <td className="road" colSpan={3}>
               {model.roadMarker?.type === 'fail' ? (
                 <p className="instruction">
-                  Wrong way!
+                  {model.roadMarker.way === 'all' ? 'Too late!' : 'Wrong way!'}
                   <br />
-                  <b>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        dispatch({ type: 'start_game', mode: model.mode })
-                      }}
-                      className="text-inherit"
-                    >
-                      Replay?
-                    </button>
-                  </b>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      dispatch({ type: 'start_game', mode: model.mode })
+                    }}
+                    className="text-inherit"
+                  >
+                    Replay?
+                  </button>
                 </p>
               ) : (
                 model.scene === 'game' &&
@@ -463,7 +563,6 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 )
               )}
             </td>
-            <td className="road" />
             <td
               className="grass"
               style={{ textAlign: 'left', paddingLeft: '4vw' }}
@@ -478,17 +577,17 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                 side: 'left',
                 marker: model.roadMarker,
                 dispatch,
+                narrowWidth: false,
               }}
             />
-            <td className="road" />
-            <td className="road" />
-            <td className="road" />
+            <td className="road" colSpan={3} />
             <Road
               {...{
                 dir: 'right',
                 side: 'right',
                 marker: model.roadMarker,
                 dispatch,
+                narrowWidth: false,
               }}
             />
           </tr>
@@ -496,13 +595,22 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
             <td className="grass">
               {model.scene === 'home' ? (
                 <div className="modes">
+                  <label>Play modes</label>
                   <button
                     onClick={(e) => {
                       e.preventDefault()
                       dispatch({ type: 'start_game', mode: 'easy' })
                     }}
                   >
-                    Play easy mode
+                    Easy
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      dispatch({ type: 'start_game', mode: 'medium' })
+                    }}
+                  >
+                    Medium
                   </button>
                   <button
                     onClick={(e) => {
@@ -510,7 +618,7 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
                       dispatch({ type: 'start_game', mode: 'hard' })
                     }}
                   >
-                    Play hard mode
+                    Hard
                   </button>
                 </div>
               ) : (
@@ -538,17 +646,27 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
             </td>
             <td className="grass">
               {model.scene === 'home' ? (
-                <div className="about">
-                  <p>
-                    Welcome to the most hazardous intersection on the internet
-                    where the correct way isn't just left or right or straight
-                    ahead, it's also which side of the road to drive on!
-                  </p>
-
-                  <p>
-                    Made by <a href="https://jew.ski">Chris Andrejewski</a>
-                  </p>
-                </div>
+                <>
+                  <div className="modes">
+                    <label>Context</label>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        dispatch({ type: 'show_about' })
+                      }}
+                    >
+                      About
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        dispatch({ type: 'show_key' })
+                      }}
+                    >
+                      Flags
+                    </button>
+                  </div>
+                </>
               ) : (
                 <p className="score score--high">
                   High
@@ -558,8 +676,117 @@ function view(model: Model, dispatch: Dispatch<Msg>) {
               )}
             </td>
           </tr>
+          <tr className="extra-bottom">
+            <td className="grass"></td>
+            <td className="road"></td>
+            <td className="grass" />
+            <td className="road"></td>
+            <td className="grass"></td>
+          </tr>
         </tbody>
       </table>
+    </div>
+  )
+}
+
+function aboutView(dispatch: Dispatch<Msg>) {
+  return (
+    <div className="scrollable-view">
+      <div className="about">
+        <h2>What's this?</h2>
+        <p>
+          Welcome to the most hazardous intersection on the internet where the
+          correct way isn't just left or right or straight ahead, it's also
+          which side of the road to drive on!
+        </p>
+
+        <p>
+          Review the{' '}
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              dispatch({ type: 'show_key' })
+            }}
+          >
+            country key
+          </a>{' '}
+          for great success in medium & hard modes.
+        </p>
+
+        <p>
+          Made by <a href="https://jew.ski">Chris Andrejewski</a>
+        </p>
+        <p>{returnButton(dispatch)}</p>
+      </div>
+    </div>
+  )
+}
+
+function returnButton(dispatch: Dispatch<Msg>) {
+  return (
+    <button
+      onClick={(e) => {
+        e.preventDefault()
+        dispatch({ type: 'reset_game' })
+      }}
+    >
+      Return to game
+    </button>
+  )
+}
+
+function keyView(dispatch: Dispatch<Msg>) {
+  return (
+    <div className="scrollable-view">
+      <div className="about">
+        <h2>Country key</h2>
+        <p>Here's the list of countries and their dominant driving side.</p>
+
+        <h3>Medium mode</h3>
+        <table style={{ width: '100%' }}>
+          <tbody>
+            {mediumCountries
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => (
+                <tr key={c.id}>
+                  <td style={{ width: '100%' }}>{c.name}</td>
+                  <td>
+                    <Indicator
+                      {...{ icon: { label: c.name, url: c.imageUrl } }}
+                    />
+                  </td>
+                  <td>
+                    <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+
+        <h3>Hard mode</h3>
+        <table style={{ width: '100%' }}>
+          <tbody>
+            {allCountries
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => (
+                <tr key={c.id}>
+                  <td style={{ width: '100%' }}>{c.name}</td>
+                  <td>
+                    <Indicator
+                      {...{ icon: { label: c.name, url: c.imageUrl } }}
+                    />
+                  </td>
+                  <td>
+                    <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+
+        <p>{returnButton(dispatch)}</p>
+      </div>
     </div>
   )
 }

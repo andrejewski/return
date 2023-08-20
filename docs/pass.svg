@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="64px" height="64px" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 52.2 (67145) - http://www.bohemiancoding.com/sketch -->
+    <title>pass</title>
+    <desc>Created with Sketch.</desc>
+    <g id="pass" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle" fill="#27B63D" x="0" y="0" width="64" height="64" rx="4"></rect>
+        <g id="Group" transform="translate(3.000000, 6.000000)" fill="#FFFFFF">
+            <polygon id="Rectangle" transform="translate(37.896067, 25.996619) rotate(30.000000) translate(-37.896067, -25.996619) " points="30.9355635 -0.00304203077 45.1206809 -0.0745716608 44.8565715 51.9962793 30.6714541 52.067809"></polygon>
+            <polygon id="Rectangle" transform="translate(18.720218, 37.456036) rotate(120.000000) translate(-18.720218, -37.456036) " points="11.5809209 19.9616648 25.683443 20.0331945 25.8595159 54.9504066 11.7569938 54.878877"></polygon>
+        </g>
+    </g>
+</svg>

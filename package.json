@@ -22,7 +22,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "publish": "rm -rf docs && PUBLIC_URL='https://jew.ski/color-blind' npm run build && mv build docs",
+    "publish": "rm -rf docs && npm run copy-flags && PUBLIC_URL='https://jew.ski/return' npm run build && mv build docs",
     "copy-flags": "cp -R node_modules/svg-country-flags/svg public/country-flag-svg"
   },
   "eslintConfig": {

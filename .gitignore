@@ -105,3 +105,4 @@ dist
 
 # CRA build folder
 build
+public/country-flag-svg

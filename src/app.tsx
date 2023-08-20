@@ -377,7 +377,7 @@ function Car({ progress }: { progress: number }) {
     <img
       className="car"
       alt="Car"
-      src="/car.svg"
+      src="./car.svg"
       style={{ top: `${100 - progress}%` }}
     />
   )
@@ -404,11 +404,11 @@ function Road({
       let src
       switch (marker.type) {
         case 'pass':
-          src = '/pass.svg'
+          src = './pass.svg'
           className += ' road--pass'
           break
         case 'fail':
-          src = '/fail.svg'
+          src = './fail.svg'
           className += ' road--fail'
           break
       }

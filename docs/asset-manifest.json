@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "https://jew.ski/return/static/css/main.83401bb5.css",
-    "main.js": "https://jew.ski/return/static/js/main.4e7f7552.js",
+    "main.js": "https://jew.ski/return/static/js/main.0ee24fcc.js",
     "index.html": "https://jew.ski/return/index.html",
     "main.83401bb5.css.map": "https://jew.ski/return/static/css/main.83401bb5.css.map",
-    "main.4e7f7552.js.map": "https://jew.ski/return/static/js/main.4e7f7552.js.map"
+    "main.0ee24fcc.js.map": "https://jew.ski/return/static/js/main.0ee24fcc.js.map"
   },
   "entrypoints": [
     "static/css/main.83401bb5.css",
-    "static/js/main.4e7f7552.js"
+    "static/js/main.0ee24fcc.js"
   ]
 }

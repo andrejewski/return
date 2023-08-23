@@ -108,6 +108,14 @@ const allCountries = getCompleteCountries()
 const hardLeftCountries = allCountries.filter((c) => c.side === 'left')
 const hardRightCountries = allCountries.filter((c) => c.side === 'right')
 
+const easyCountriesCodes = ['us', 'gb', 'ca', 'in']
+const easyCountries = allCountries.filter((c) =>
+  easyCountriesCodes.includes(c.id)
+)
+
+const easyLeftCountries = easyCountries.filter((c) => c.side === 'left')
+const easyRightCountries = easyCountries.filter((c) => c.side === 'right')
+
 const mediumCountryCodes = [
   'us',
   'gb',
@@ -134,6 +142,23 @@ function getSimpleSideIcon(side: Side): Icon {
       return { label: 'Left', url: './left.svg' }
     case 'right':
       return { label: 'Right', url: './right.svg' }
+  }
+}
+
+function getRandomEasyCountryIcon(side: Side): Icon {
+  let country: Country
+  switch (side) {
+    case 'left':
+      country = randomItem(easyLeftCountries)
+      break
+    case 'right':
+      country = randomItem(easyRightCountries)
+      break
+  }
+
+  return {
+    label: country.name,
+    url: country.imageUrl,
   }
 }
 
@@ -181,9 +206,9 @@ function makeRandomLayout(mode: Mode): Layout {
   let rightIcon: Icon
   switch (mode) {
     case 'easy':
-      forwardIcon = getSimpleSideIcon(forward)
-      leftIcon = getSimpleSideIcon(left)
-      rightIcon = getSimpleSideIcon(right)
+      forwardIcon = getRandomEasyCountryIcon(forward)
+      leftIcon = getRandomEasyCountryIcon(left)
+      rightIcon = getRandomEasyCountryIcon(right)
       break
     case 'medium':
       forwardIcon = getRandomMediumCountryIcon(forward)
@@ -749,7 +774,7 @@ function aboutView(dispatch: Dispatch<Msg>) {
         >
           country key
         </a>{' '}
-        for great success in medium & hard modes.
+        for great success.
       </p>
 
       <p>
@@ -765,35 +790,53 @@ function keyView(dispatch: Dispatch<Msg>) {
       <h2>Country key</h2>
       <p>Here's the list of countries and their dominant driving side.</p>
 
-      <h3>Medium mode</h3>
-      <table style={{ width: '100%' }}>
-        <tbody>
-          {mediumCountries
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((c) => (
-              <tr key={c.id}>
-                <td style={{ width: '100%' }}>{c.name}</td>
-                <td>
-                  <Indicator
-                    {...{ icon: { label: c.name, url: c.imageUrl } }}
-                  />
-                </td>
-                <td>
-                  <Indicator {...{ icon: getSimpleSideIcon(c.side) }} />
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+      <ModeCountryList
+        {...{
+          title: 'Easy mode countries',
+          countries: easyCountries,
+        }}
+      />
 
-      <h3>Hard mode</h3>
+      <ModeCountryList
+        {...{
+          title: 'Medium mode countries',
+          countries: mediumCountries,
+        }}
+      />
+
+      <ModeCountryList
+        {...{
+          title: 'Hard mode countries',
+          countries: allCountries,
+        }}
+      />
+    </Page>
+  )
+}
+
+function ModeCountryList({
+  title,
+  countries,
+}: {
+  title: string
+  countries: Country[]
+}) {
+  return (
+    <>
+      <h3>{title}</h3>
       <table style={{ width: '100%' }}>
         <tbody>
-          {allCountries
+          {countries
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((c) => (
               <tr key={c.id}>
-                <td style={{ width: '100%' }}>{c.name}</td>
+                <td style={{ width: '100%' }}>
+                  <b>{c.name}</b>
+                  <br />
+                  {c.side === 'left'
+                    ? 'Drive on the left-hand side'
+                    : 'Drive on the right-hand side'}
+                </td>
                 <td>
                   <Indicator
                     {...{ icon: { label: c.name, url: c.imageUrl } }}
@@ -806,6 +849,6 @@ function keyView(dispatch: Dispatch<Msg>) {
             ))}
         </tbody>
       </table>
-    </Page>
+    </>
   )
 }
